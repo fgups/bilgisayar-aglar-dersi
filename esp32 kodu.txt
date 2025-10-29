@@ -1,0 +1,65 @@
+#include <WiFi.h>
+
+const char* ssid = "Furkan";       // Wi-Fi ağınızın adı
+const char* password = "123456789"; // Wi-Fi şifreniz
+
+const char* serverIP = "10.153.200.173"; // Bilgisayarının IP adresi (cmd > ipconfig)
+uint16_t serverPort = 8888;                      // Sunucudaki port (Python koduyla aynı olmalı)
+
+WiFiClient client;
+
+void setup() {
+  Serial.begin(115200);
+  delay(10);
+
+  Serial.println();
+  Serial.print(ssid);
+  Serial.println(" ağına bağlanılıyor...");
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("Wi-Fi bağlantısı başarılı!");
+  Serial.print("ESP32 IP Adresi: ");
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+  Serial.print(serverIP);
+  Serial.print(" adresine bağlanmayı deniyor...");
+
+  // Sunucuya bağlanmayı dene
+  if (client.connect(serverIP, serverPort)) {
+    Serial.println(" Bağlantı başarılı!");
+
+    // Sunucuya bir "ping" mesajı gönder
+    client.println("PING! ESP32'den test mesajı .");
+    Serial.println("Sunucuya 'PING' gönderildi.");
+
+    // Sunucudan (varsa) gelen "pong" (yankı) cevabını oku
+    while (client.connected() && !client.available()) {
+      delay(10); // Cevap için kısa bir süre bekle
+    }
+    
+    while(client.available()){
+      String line = client.readStringUntil('\r');
+      Serial.print("Sunucudan gelen cevap (PONG): ");
+      Serial.println(line);
+    }
+
+    // Bağlantıyı kapat
+    client.stop();
+    Serial.println("Bağlantı kapatıldı.");
+    
+  } else {
+    Serial.println(" Bağlantı başarısız!");
+  }
+
+  Serial.println("Yeni 'PING' için 5 saniye bekleniyor...");
+  delay(5000);
+}
